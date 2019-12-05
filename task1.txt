@@ -1,0 +1,101 @@
+
+####################################
+# User Configuration Section Begins
+####################################
+
+# Subscription name in Azure account. Check in Azure Portal.
+$azureSubscriptionName = "Ögrenciler için Azure"
+
+# Resource group name for resource deployment. Could be an existing resource group or a new one to be created.
+$resourceGroupName = "rgassignment6"
+
+# Location for existing resource group or new resource group deployment
+################################### List of available regions #################################################
+# centralus,eastasia,southeastasia,eastus,eastus2,westus,westus2,northcentralus,southcentralus,westcentralus,
+# northeurope,westeurope,japaneast,japanwest,brazilsouth,australiasoutheast,australiaeast,westindia,southindia,
+# centralindia,canadacentral,canadaeast,uksouth,ukwest.
+###############################################################################################################
+$location = "eastus"
+
+# Service Manager Authentication Settings
+$serverName = "lamiakartal114200060-1"
+$domain = "lamiakartal114200060-1"
+$username = "lamiakartal"
+$password = "lamiakartal123"
+
+
+# Azure site Name Prefix. Default is "smoc". It can be configured to any desired value.
+$siteNamePrefix = "lamiakartal114200060-"
+
+# Service Bus namespace. Please provide an already existing service bus namespace.
+# If it doesn't exist, a new one will be created with name $siteName + "sbn" which can also be later reused for any other hybrid connections.
+$serviceName = ""
+
+##################################
+# User Configuration Section Ends
+##################################
+
+################
+# Installations
+################
+
+# Allowing the execution of the script for current user.  
+Set-ExecutionPolicy -ExecutionPolicy Unrestricted -Scope CurrentUser -Force
+
+Write-Host "Checking for required modules..."
+if(!(Get-PackageProvider -Name NuGet))
+{
+   Write-Host "Installing NuGet Package Provider..."
+   Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Scope CurrentUser -Force -WarningAction SilentlyContinue
+}
+$module = Get-Module -ListAvailable -Name Az
+
+if(!$module -or ($module[0].Version.Major -lt 1))
+{
+    Write-Host "Installing Az Module..."  
+    try
+    {
+        # In case of Win 10 Anniversary update
+        Install-Module Az -MinimumVersion 1.0 -Scope CurrentUser -Force -WarningAction SilentlyContinue -AllowClobber
+    }
+    catch
+    {
+        Install-Module Az -MinimumVersion 1.0 -Scope CurrentUser -Force -WarningAction SilentlyContinue
+    }
+
+}
+
+Write-Host "Requirement check complete!!"
+
+#############
+# Parameters
+#############
+
+$errorActionPreference = "Stop"
+
+#$templateUri = "https://raw.githubusercontent.com/azure-alerts-management/SMOMSConnector/master/azuredeploy.json"
+$templateUri = "https://raw.githubusercontent.com/lamiakartal/aasignment6/master/azuredeploy.json"
+if(!$siteNamePrefix)
+{
+    $siteNamePrefix = "smoc"
+}
+
+Connect-AzAccount
+
+$context = Set-AzContext -SubscriptionName $azureSubscriptionName -WarningAction SilentlyContinue
+
+$resourceProvider = Get-AzResourceProvider -ProviderNamespace Microsoft.Web
+
+if(!$resourceProvider -or $resourceProvider[0].RegistrationState -ne "Registered")
+{
+    try
+    {
+        Write-Host "Registering Microsoft.Web Resource Provider"
+        Register-AzResourceProvider -ProviderNamespace Microsoft.Web
+    }
+    catch
+    {
+        Write-Host "Failed to Register Microsoft.Web Resource Provider. Please register it in Azure Portal."
+        exit
+    }   
+} 
